@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA Interview Quiz — Flashcards & Ranks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101a26; --ink2:#3a4a5e; --muted:#7a8a9d;
+    --paper:#eef1f6; --card:#ffffff; --line:#e3e8ef; --line2:#cdd6e1;
+    --pass:#0e9f6e; --pass-d:#0a6b4a; --pass-soft:#e4f5ee;
+    --warn:#c2710c; --warn-soft:#fbefdd;
+    --crit:#d23f57; --crit-soft:#fbe9ed;
+    --blue:#2f6df0; --blue-soft:#e8f0fe;
+    --purple:#6d54d4; --purple-soft:#eee9fb;
+    --display:"Space Grotesk",system-ui,sans-serif;
+    --body:"Inter",system-ui,sans-serif;
+    --mono:"JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--body);}
+  .wrap{max-width:780px;margin:0 auto;padding:22px 16px 60px;}
+
+  /* header */
+  header{background:var(--ink);color:#fff;border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;}
+  header::after{content:"";position:absolute;right:-50px;top:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(14,159,110,.28),transparent 68%);}
+  .kick{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#7fe3bd;}
+  header h1{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.01em;margin:6px 0 2px;position:relative;}
+  header .tag{color:#aebccd;font-size:13.5px;position:relative;}
+
+  /* rank badge */
+  .rankbar{display:flex;gap:12px;align-items:center;margin-top:16px;position:relative;flex-wrap:wrap;}
+  .badge{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:8px 14px;border-radius:12px;}
+  .badge .ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:15px;color:#fff;}
+  .badge .meta small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:#8fb8cf;text-transform:uppercase;}
+  .badge .meta b{font-family:var(--display);font-weight:600;font-size:15px;color:#fff;}
+  .pts{font-family:var(--mono);font-size:13px;color:#d6e0ec;}
+  .pts b{color:#7fe3bd;}
+
+  /* progress to next rank */
+  .toNext{margin-top:12px;position:relative;}
+  .toNext .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:#9fb0c2;display:flex;justify-content:space-between;margin-bottom:5px;}
+  .track{height:8px;background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden;}
+  .fill{height:100%;background:var(--pass);width:0%;transition:width .4s ease;}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+  .stat .n{font-family:var(--display);font-weight:600;font-size:21px;}
+  .stat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+
+  /* controls */
+  .controls{margin-top:16px;display:flex;flex-direction:column;gap:10px;}
+  .levels{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:5px;}
+  .levels button{flex:1;border:none;background:transparent;font-family:var(--body);font-weight:600;font-size:13px;color:var(--ink2);padding:9px 6px;border-radius:8px;cursor:pointer;transition:.15s;}
+  .levels button.on{background:var(--ink);color:#fff;}
+  .row2{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  select{font-family:var(--body);font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;}
+  .toggle{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink2);cursor:pointer;user-select:none;}
+  .toggle input{width:16px;height:16px;accent-color:var(--pass);}
+  .ghost{margin-left:auto;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--crit);background:var(--crit-soft);border:1px solid #f3ced5;padding:8px 12px;border-radius:9px;cursor:pointer;}
+
+  /* card */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:16px;min-height:300px;display:flex;flex-direction:column;}
+  .cardtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .tags{display:flex;gap:7px;flex-wrap:wrap;}
+  .t{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:6px;}
+  .t.cat{background:var(--blue-soft);color:#1a4fb0;border:1px solid #d3e1fd;}
+  .t.lv-Beginner{background:var(--pass-soft);color:var(--pass-d);border:1px solid #c5ecdc;}
+  .t.lv-Intermediate{background:var(--warn-soft);color:var(--warn);border:1px solid #f1dcb9;}
+  .t.lv-Advanced{background:var(--purple-soft);color:#4a35a8;border:1px solid #ddd3f5;}
+  .qnum{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .qtext{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.3;letter-spacing:-.01em;}
+  .answer{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line2);font-size:15px;line-height:1.6;color:var(--ink2);}
+  .answer.hidden{display:none;}
+  .status-strip{margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+
+  .actions{margin-top:auto;padding-top:20px;display:flex;gap:10px;flex-wrap:wrap;}
+  button.act{font-family:var(--body);font-weight:600;font-size:14px;padding:13px 18px;border-radius:11px;cursor:pointer;border:1px solid var(--line2);background:var(--card);color:var(--ink);flex:1;min-width:120px;transition:.15s;}
+  button.act:hover{border-color:var(--ink2);}
+  button.reveal{background:var(--ink);color:#fff;border-color:var(--ink);}
+  button.known{background:var(--pass-soft);color:var(--pass-d);border-color:#bce6d5;}
+  button.known:hover{background:#d6f0e6;}
+  button.review{background:var(--warn-soft);color:var(--warn);border-color:#f0d9b3;}
+  button.review:hover{background:#f8e6c9;}
+  .opts{margin-top:18px;display:flex;flex-direction:column;}
+  .opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;font-family:var(--body);font-size:14px;line-height:1.45;padding:13px 14px;border:1px solid var(--line2);border-radius:11px;background:var(--card);color:var(--ink);cursor:pointer;margin-top:10px;transition:.12s;}
+  .opt:hover:not(:disabled){border-color:var(--ink2);background:#f8fafc;}
+  .opt .k{font-family:var(--mono);font-size:12px;color:var(--muted);flex:none;width:18px;text-align:center;line-height:1.45;}
+  .opt.correct{background:var(--pass-soft);border-color:#bce6d5;color:var(--pass-d);}
+  .opt.correct .k{color:var(--pass-d);}
+  .opt.wrong{background:var(--crit-soft);border-color:#f3ced5;color:var(--crit);}
+  .opt.wrong .k{color:var(--crit);}
+  .opt:disabled{cursor:default;}
+  .feedback{margin-top:16px;font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;}
+  .feedback.ok{color:var(--pass-d);}
+  .feedback.no{color:var(--crit);}
+  .nav{display:flex;gap:10px;margin-top:10px;}
+  button.navbtn{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.04em;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink2);cursor:pointer;}
+  button.navbtn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .done{text-align:center;padding:30px 10px;}
+  .done h2{font-family:var(--display);font-size:22px;margin:0 0 6px;}
+  .done p{color:var(--ink2);font-size:14px;}
+
+  /* ranks ladder */
+  .ladder{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .ladder h3{font-family:var(--display);font-weight:600;font-size:15px;margin:0 0 12px;}
+  .rank-list{display:grid;gap:8px;}
+  .rrow{display:flex;align-items:center;gap:12px;font-size:13px;padding:7px 9px;border-radius:9px;border:1px solid transparent;}
+  .rrow.cur{background:var(--pass-soft);border-color:#c5ecdc;}
+  .rrow .chip{width:26px;height:26px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--display);font-weight:700;font-size:12px;}
+  .rrow .name{font-family:var(--display);font-weight:600;color:var(--ink);}
+  .rrow .req{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto;}
+
+  .note{margin-top:18px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6;}
+  .site-foot{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:13px;color:var(--muted);display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;}
+  .site-foot b{color:var(--ink);font-weight:600;}
+  .site-foot a{color:var(--pass-d);text-decoration:none;font-weight:600;}
+  .site-foot a:hover{text-decoration:underline;}
+  .site-foot .sep{color:var(--line2);}
+  @media (max-width:560px){.stats{grid-template-columns:repeat(2,1fr);} .qtext{font-size:19px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kick">QA Interview Prep</div>
+    <h1>The QA Quiz</h1>
+    <div class="tag">100 questions · Beginner → Advanced · test yourself</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="sSeen">0</div><div class="l">Seen</div></div>
+    <div class="stat"><div class="n" id="sMaster">0</div><div class="l">Mastered</div></div>
+    <div class="stat"><div class="n" id="sReview">0</div><div class="l">To review</div></div>
+    <div class="stat"><div class="n" id="sAcc">—</div><div class="l">Accuracy</div></div>
+  </div>
+
+  <div class="controls">
+    <div class="levels" id="modes">
+      <button data-mode="quiz" class="on">Quiz mode</button>
+      <button data-mode="flash">Flashcards</button>
+    </div>
+    <div class="levels" id="levels">
+      <button data-lv="All" class="on">All</button>
+      <button data-lv="Beginner">Beginner</button>
+      <button data-lv="Intermediate">Intermediate</button>
+      <button data-lv="Advanced">Advanced</button>
+    </div>
+    <div class="row2">
+      <select id="catSel"><option value="All">All categories</option></select>
+      <label class="toggle"><input type="checkbox" id="shuffleChk">Shuffle</label>
+      <label class="toggle"><input type="checkbox" id="reviewChk">Review only</label>
+      <button class="ghost" id="resetBtn">Reset progress</button>
+    </div>
+  </div>
+
+  <div class="card" id="card"></div>
+
+  <footer class="site-foot">
+    <span>Built by <b>Obyed Ullah Khan</b></span>
+    <span class="sep">·</span>
+    <a href="https://github.com/ouks-bd" target="_blank" rel="noopener">GitHub</a>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/obyed-ullah-khan/" target="_blank" rel="noopener">LinkedIn</a>
+  </footer>
+</div>
+
+<script>
+/* ---------- safe storage (works on GitHub Pages, falls back in sandboxed preview) ---------- */
+const Store = (() => {
+  let mem = {}, ok = true;
+  try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); }
+  catch(e){ ok = false; }
+  return {
+    ok,
+    get(k){ try { return ok ? localStorage.getItem(k) : (mem[k] ?? null); } catch(e){ return mem[k] ?? null; } },
+    set(k,v){ try { ok ? localStorage.setItem(k,v) : (mem[k]=v); } catch(e){ mem[k]=v; } },
+    del(k){ try { ok ? localStorage.removeItem(k) : (delete mem[k]); } catch(e){ delete mem[k]; } }
+  };
+})();
+
+/* ---------- 100 questions ---------- */
+const Q = [
+ // FUNDAMENTALS — Beginner
+ {c:"Fundamentals",l:"Beginner",q:"What is Quality Assurance (QA)?",a:"A process-focused practice that builds quality into the product to prevent defects, rather than only finding them after the fact. It covers the whole development lifecycle, not just testing."},
+ {c:"Fundamentals",l:"Beginner",q:"QA vs QC — what's the difference?",a:"QA is process-oriented and proactive (preventing defects by improving processes). QC (Quality Control) is product-oriented and reactive (detecting defects in the built product through testing)."},
+ {c:"Fundamentals",l:"Beginner",q:"How is testing different from QA?",a:"Testing is one activity within QA — the act of executing software to find defects. QA is the broader discipline of processes and standards that ensure quality overall."},
+ {c:"Fundamentals",l:"Beginner",q:"What is a defect (bug)?",a:"A mismatch between the expected result and the actual result of the software. It's a flaw that causes the system to behave incorrectly."},
+ {c:"Fundamentals",l:"Beginner",q:"Error vs Defect vs Failure?",a:"An error is a human mistake; it introduces a defect (bug) in the code; a failure occurs when that defect is executed and produces a wrong result for the user."},
+ {c:"Fundamentals",l:"Beginner",q:"What is a test case?",a:"A set of step-by-step instructions — with preconditions, inputs, and expected results — used to verify that a specific feature works as intended."},
+ {c:"Fundamentals",l:"Beginner",q:"What is a test scenario?",a:"A high-level description of what to test (an end-to-end functionality), without the detailed steps. One scenario usually spawns several test cases."},
+ {c:"Fundamentals",l:"Beginner",q:"What is a test plan?",a:"A document describing the scope, objectives, approach, resources, schedule, and entry/exit criteria for testing a project."},
+ {c:"Fundamentals",l:"Beginner",q:"Severity vs Priority?",a:"Severity is the impact of a bug on the system; priority is how urgently it should be fixed. You can have low-severity/high-priority (e.g. a misspelled company name on the homepage) and vice versa."},
+ {c:"Fundamentals",l:"Beginner",q:"Describe the bug life cycle.",a:"New → Assigned → Open/In Progress → Fixed → Retest → Closed. A bug can also be Reopened (failed retest), Rejected, Duplicate, or Deferred."},
+ {c:"Fundamentals",l:"Beginner",q:"Verification vs Validation?",a:"Verification asks 'are we building the product right?' (reviews, static checks against spec). Validation asks 'are we building the right product?' (dynamic testing against user needs)."},
+ {c:"Fundamentals",l:"Beginner",q:"What is the SDLC?",a:"Software Development Life Cycle — the phases a project goes through: requirements, design, development, testing, deployment, and maintenance."},
+ {c:"Fundamentals",l:"Beginner",q:"What is the STLC?",a:"Software Testing Life Cycle — requirement analysis, test planning, test case design, environment setup, test execution, and test closure."},
+ {c:"Fundamentals",l:"Beginner",q:"What are entry and exit criteria?",a:"Entry criteria are conditions that must be met before testing starts (e.g. stable build, ready environment). Exit criteria define when testing can stop (e.g. coverage met, no open critical bugs)."},
+ {c:"Fundamentals",l:"Beginner",q:"What is a Requirement Traceability Matrix (RTM)?",a:"A document mapping requirements to their test cases, ensuring every requirement is covered by at least one test and tracking coverage gaps."},
+ {c:"Fundamentals",l:"Beginner",q:"What is the QA's role in a team?",a:"To advocate for quality across the lifecycle — clarifying requirements, designing and running tests, reporting defects clearly, and helping prevent issues, not just catch them."},
+
+ // TEST TYPES — Beginner
+ {c:"Test Types",l:"Beginner",q:"What is functional testing?",a:"Testing what the system does against functional requirements — verifying features behave correctly (login, search, checkout, etc.)."},
+ {c:"Test Types",l:"Beginner",q:"What is non-functional testing?",a:"Testing how the system performs rather than what it does — performance, security, usability, reliability, scalability, compatibility."},
+ {c:"Test Types",l:"Beginner",q:"What is smoke testing?",a:"A quick, shallow check that the critical core functions of a new build work, so deeper testing is worth doing. Also called 'build verification'."},
+ {c:"Test Types",l:"Beginner",q:"What is sanity testing?",a:"A narrow, focused check after minor changes or bug fixes to confirm the specific functionality works before broader testing. It's usually unscripted."},
+ {c:"Test Types",l:"Beginner",q:"Smoke vs Sanity testing?",a:"Smoke is broad and shallow over the whole build; sanity is narrow and deep on a specific area after a change. Smoke verifies stability; sanity verifies a fix or new feature."},
+ {c:"Test Types",l:"Beginner",q:"What is regression testing?",a:"Re-running existing tests after a change to make sure new code hasn't broken previously working functionality."},
+ {c:"Test Types",l:"Beginner",q:"Retesting vs Regression testing?",a:"Retesting verifies a specific fixed defect is actually fixed (same data, same steps). Regression checks that the fix didn't break anything else around it."},
+ {c:"Test Types",l:"Beginner",q:"Black box vs White box testing?",a:"Black box tests behavior without knowledge of internal code (input/output based). White box tests internal logic, paths, and structure with code knowledge."},
+ {c:"Test Types",l:"Beginner",q:"What is gray box testing?",a:"A mix of black and white box — testing with partial knowledge of internals (e.g. database schema or APIs) to design smarter end-to-end tests."},
+ {c:"Test Types",l:"Beginner",q:"Positive vs Negative testing?",a:"Positive testing uses valid inputs to confirm the system works as expected. Negative testing uses invalid inputs to confirm the system handles errors gracefully."},
+ {c:"Test Types",l:"Beginner",q:"What is exploratory testing?",a:"Simultaneous learning, test design, and execution — the tester explores the app without predefined scripts, using experience to find issues."},
+ {c:"Test Types",l:"Beginner",q:"What is ad-hoc testing?",a:"Informal, unstructured testing done without planning or documentation, relying on the tester's intuition to break the system."},
+ {c:"Test Types",l:"Beginner",q:"UI vs UX testing?",a:"UI testing checks visual elements and their correctness (layout, buttons, fields). UX testing evaluates the overall experience — ease, flow, and satisfaction of using the product."},
+ {c:"Test Types",l:"Beginner",q:"What is cross-browser testing?",a:"Verifying the application looks and works correctly across different browsers, versions, and devices (Chrome, Firefox, Safari, Edge, mobile)."},
+ {c:"Test Types",l:"Beginner",q:"What is usability testing?",a:"Evaluating how easy and intuitive the product is for real users to accomplish their goals, often by observing users completing tasks."},
+ {c:"Test Types",l:"Beginner",q:"What is accessibility testing?",a:"Checking the product is usable by people with disabilities — keyboard navigation, screen-reader support, color contrast, and WCAG compliance."},
+ {c:"Test Types",l:"Beginner",q:"Alpha vs Beta testing?",a:"Alpha testing is done internally before release; beta testing is done by real end users in their own environment before final launch."},
+ {c:"Test Types",l:"Beginner",q:"What is acceptance testing (UAT)?",a:"Testing by the customer/end users to confirm the system meets business requirements and is acceptable for release."},
+ {c:"Test Types",l:"Beginner",q:"What is integration testing?",a:"Testing how individual modules or services work together once combined, to catch interface and data-flow defects between components."},
+ {c:"Test Types",l:"Beginner",q:"What is unit testing?",a:"Testing the smallest pieces of code (functions/methods) in isolation, usually written and run by developers."},
+ {c:"Test Types",l:"Beginner",q:"What is system testing?",a:"Testing the complete, integrated application as a whole against the full set of requirements in a production-like environment."},
+ {c:"Test Types",l:"Beginner",q:"What is a test suite vs a test harness?",a:"A test suite is a collection of related test cases run together. A test harness is the framework/tools and stubs/drivers that automate executing those tests."},
+ {c:"Test Types",l:"Beginner",q:"Static vs Dynamic testing?",a:"Static testing examines artifacts without running the code (reviews, walkthroughs, static analysis). Dynamic testing executes the software to observe its actual behavior."},
+ {c:"Test Types",l:"Beginner",q:"What is a test environment?",a:"The setup of hardware, software, network, and data configured to mirror production so tests run under realistic conditions."},
+
+ // TEST DESIGN — Intermediate
+ {c:"Test Design",l:"Intermediate",q:"What is Boundary Value Analysis (BVA)?",a:"A technique that tests values at the edges of input ranges, where defects cluster. For a 1–100 range, test 0, 1, 2, 99, 100, 101."},
+ {c:"Test Design",l:"Intermediate",q:"What is Equivalence Partitioning?",a:"Dividing inputs into valid and invalid groups that should be treated the same, then testing one representative value from each group to reduce redundant tests."},
+ {c:"Test Design",l:"Intermediate",q:"What is Decision Table testing?",a:"A technique that maps combinations of conditions to expected actions in a table — ideal for complex business rules with multiple inputs."},
+ {c:"Test Design",l:"Intermediate",q:"What is State Transition testing?",a:"Testing how the system moves between states in response to events (e.g. an order: draft → submitted → approved), including valid and invalid transitions."},
+ {c:"Test Design",l:"Intermediate",q:"What is Use Case testing?",a:"Deriving test cases from use cases that describe user-system interactions, ensuring real end-to-end flows are validated."},
+ {c:"Test Design",l:"Intermediate",q:"What is Error Guessing?",a:"An experience-based technique where testers anticipate likely error-prone areas (empty fields, zero, special characters) and target them."},
+ {c:"Test Design",l:"Intermediate",q:"What is Pairwise (all-pairs) testing?",a:"A combinatorial technique that tests all possible pairs of input values instead of every combination, drastically cutting test count while catching most interaction defects."},
+ {c:"Test Design",l:"Intermediate",q:"How do you decide what to test first?",a:"Risk-based prioritization: focus on high-business-impact and high-likelihood-of-failure areas first — critical paths, recently changed code, and frequently used features."},
+ {c:"Test Design",l:"Intermediate",q:"How would you test a login page?",a:"Valid and invalid credentials, blank fields, field validation, password masking, SQL injection/XSS, brute-force lockout, 'remember me', forgot password, session timeout, and cross-browser behavior."},
+ {c:"Test Design",l:"Intermediate",q:"How would you test a search bar?",a:"Valid and invalid keywords, partial matches, special characters, very long input, empty search, case sensitivity, auto-suggest, pagination, and response time."},
+ {c:"Test Design",l:"Intermediate",q:"How would you test 'Add to Cart' in e-commerce?",a:"Add and remove items, update quantity, add the same item twice, cart persistence after refresh and after login/logout, price/total calculation, discount codes, and out-of-stock handling."},
+ {c:"Test Design",l:"Intermediate",q:"How do you handle incomplete or unclear requirements?",a:"Clarify with the BA/PO/stakeholders, document assumptions, use exploratory testing and analogous standards, and raise the ambiguity as a risk early."},
+ {c:"Test Design",l:"Intermediate",q:"What makes a good test case?",a:"Clear, atomic, traceable to a requirement, with explicit preconditions, steps, test data, and an unambiguous expected result — repeatable by anyone."},
+ {c:"Test Design",l:"Intermediate",q:"What makes a good bug report?",a:"A clear title, environment details, exact reproduction steps, expected vs actual result, severity/priority, and evidence (screenshots, logs, video)."},
+ {c:"Test Design",l:"Intermediate",q:"When do you stop testing?",a:"When exit criteria are met: planned coverage achieved, no open critical/high defects, defect rate has stabilized, deadlines/budget reached, and risk is acceptable to stakeholders."},
+
+ // API — Intermediate
+ {c:"API",l:"Intermediate",q:"What is API testing?",a:"Testing the application's business logic directly at the API layer — verifying requests, responses, status codes, data, and error handling without a UI."},
+ {c:"API",l:"Intermediate",q:"What do common HTTP status codes mean?",a:"200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Too Many Requests, 500 Internal Server Error."},
+ {c:"API",l:"Intermediate",q:"GET vs POST vs PUT vs PATCH vs DELETE?",a:"GET reads data, POST creates, PUT replaces a whole resource, PATCH updates part of a resource, DELETE removes it. GET/PUT/DELETE are idempotent; POST is not."},
+ {c:"API",l:"Intermediate",q:"What do you validate in an API response?",a:"Status code, response time, headers, body structure (JSON schema), correct/complete data, required fields, data types, and error messages for bad requests."},
+ {c:"API",l:"Intermediate",q:"Authentication vs Authorization?",a:"Authentication verifies who you are (login/credentials). Authorization verifies what you're allowed to do (permissions/roles) once authenticated."},
+ {c:"API",l:"Intermediate",q:"REST vs SOAP?",a:"REST is a lightweight architectural style using HTTP and usually JSON, flexible and stateless. SOAP is a stricter protocol using XML with built-in standards for security and transactions."},
+ {c:"API",l:"Intermediate",q:"What is idempotency in APIs?",a:"An operation is idempotent if making the same request multiple times has the same effect as making it once (e.g. GET, PUT, DELETE)."},
+ {c:"API",l:"Intermediate",q:"What is Postman used for?",a:"A tool to build, send, and automate API requests; inspect responses; chain requests with variables; write test assertions; and run collections in CI."},
+
+ // PERFORMANCE — Intermediate
+ {c:"Performance",l:"Intermediate",q:"What is performance testing?",a:"Non-functional testing that measures how a system behaves under workload — speed, responsiveness, stability, and scalability."},
+ {c:"Performance",l:"Intermediate",q:"Load vs Stress vs Spike vs Soak testing?",a:"Load: expected user volume. Stress: beyond capacity to find the breaking point. Spike: sudden sharp load changes. Soak/endurance: sustained load over long periods to find leaks."},
+ {c:"Performance",l:"Intermediate",q:"What are key performance metrics?",a:"Response time, latency, throughput (requests/sec), error rate, concurrent users, and resource utilization (CPU, memory)."},
+ {c:"Performance",l:"Intermediate",q:"What is throughput vs latency?",a:"Throughput is how many requests are processed per unit time; latency is the time for a single request to get a response. High throughput with low latency is ideal."},
+ {c:"Performance",l:"Intermediate",q:"Which tools are used for performance testing?",a:"JMeter and k6 are common open-source choices; also Gatling, Locust, and LoadRunner. They simulate concurrent virtual users and measure metrics."},
+
+ // AUTOMATION — Intermediate
+ {c:"Automation",l:"Intermediate",q:"When should you automate a test?",a:"When it's repetitive, stable, run frequently (regression/smoke), data-driven, or hard to do manually. Avoid automating one-off, exploratory, or constantly changing tests."},
+ {c:"Automation",l:"Intermediate",q:"What is the test automation pyramid?",a:"A model recommending many fast unit tests at the base, fewer integration/API tests in the middle, and few slow UI/E2E tests at the top."},
+ {c:"Automation",l:"Intermediate",q:"What is the Page Object Model (POM)?",a:"A design pattern where each page/screen is a class encapsulating its locators and actions, so tests are readable and UI changes are fixed in one place."},
+ {c:"Automation",l:"Intermediate",q:"What are flaky tests and what causes them?",a:"Tests that pass and fail inconsistently without code changes. Common causes: timing/async issues, hard-coded waits, test interdependence, shared state, and unstable test data or environments."},
+ {c:"Automation",l:"Intermediate",q:"What is data-driven testing?",a:"Running the same test logic with multiple sets of input data from an external source (CSV, JSON, spreadsheet) to maximize coverage with one script."},
+ {c:"Automation",l:"Intermediate",q:"What is keyword-driven testing?",a:"An approach where test actions are represented as reusable keywords (e.g. login, click) defined separately from test data, letting non-coders build tests."},
+ {c:"Automation",l:"Intermediate",q:"What is BDD (Behavior-Driven Development)?",a:"A collaboration approach writing scenarios in plain-language Given/When/Then (Gherkin), shared by business and tech, often automated with tools like Cucumber."},
+ {c:"Automation",l:"Intermediate",q:"Hard assertion vs soft assertion?",a:"A hard assertion stops the test immediately on failure. A soft assertion records the failure but continues, reporting all failures at the end."},
+ {c:"Automation",l:"Intermediate",q:"What is CI/CD and QA's role in it?",a:"Continuous Integration/Delivery automatically builds, tests, and deploys code. QA contributes automated test suites (smoke/regression) that gate the pipeline and give fast feedback."},
+
+ // PROCESS — Intermediate
+ {c:"Process",l:"Intermediate",q:"How does testing work in Agile/Scrum?",a:"Testing is continuous within each sprint — testers refine stories, define acceptance criteria, test as features are built, automate regression, and participate in ceremonies."},
+ {c:"Process",l:"Intermediate",q:"What is a definition of done from a QA view?",a:"Criteria a story must meet to be complete: code reviewed, tests written and passing, acceptance criteria met, no open critical defects, and documentation updated."},
+ {c:"Process",l:"Intermediate",q:"Test strategy vs test plan?",a:"A test strategy is a high-level, often org-wide document of testing approach and standards. A test plan is project-specific, covering scope, schedule, and resources."},
+
+ // ADVANCED
+ {c:"Test Design",l:"Advanced",q:"How do you design a regression suite for a large app?",a:"Prioritize by risk and usage, cover critical end-to-end paths, layer it (unit/API/UI per the pyramid), keep it maintainable and independent, tag by area, and periodically prune redundant or low-value tests."},
+ {c:"Automation",l:"Advanced",q:"How do you reduce flaky tests?",a:"Use explicit waits over fixed sleeps, ensure test isolation and fresh data, mock unstable dependencies, retry only deterministically, stabilize environments, and quarantine + root-cause flaky tests rather than ignoring them."},
+ {c:"Automation",l:"Advanced",q:"Explicit vs implicit waits?",a:"Implicit wait sets a global timeout polling for elements. Explicit wait pauses for a specific condition on a specific element. Explicit waits are more reliable; mixing both can cause unpredictable delays."},
+ {c:"Process",l:"Advanced",q:"How do you manage test data at scale?",a:"Use data factories/builders, seed and reset databases per run, isolate per-test data, mask production data for privacy, and prefer generating data via API setup over manual fixtures."},
+ {c:"Security",l:"Advanced",q:"What basic security risks should QA test for (OWASP)?",a:"Injection (SQL), broken authentication, broken access control, XSS, security misconfiguration, sensitive data exposure, and CSRF — at least at an awareness/basic-verification level."},
+ {c:"Security",l:"Advanced",q:"What is SQL injection and how do you test for it?",a:"An attack injecting SQL via inputs to manipulate the database. Test by entering payloads like ' OR '1'='1 or '; DROP into fields and confirming inputs are sanitized/parameterized and errors aren't exposed."},
+ {c:"Security",l:"Advanced",q:"What is XSS and how do you test for it?",a:"Cross-Site Scripting injects malicious scripts into pages viewed by others. Test by entering script tags/HTML in inputs and confirming output is encoded/escaped rather than executed."},
+ {c:"API",l:"Advanced",q:"What is API contract testing?",a:"Verifying that the request/response contract between a consumer and provider (schema, fields, types) holds, often with tools like Pact, so services can evolve independently without breaking integrations."},
+ {c:"Automation",l:"Advanced",q:"What are mocking, stubbing, and service virtualization?",a:"Stubs return canned responses; mocks also verify interactions/expectations; service virtualization simulates whole external services. All let you test in isolation when real dependencies are unavailable or costly."},
+ {c:"Process",l:"Advanced",q:"How do you measure test coverage, and what are its limits?",a:"Coverage (code, requirement, branch) shows what was exercised, not whether it was tested well. 100% code coverage can still miss logic, data, and integration defects, so treat it as a guide, not a goal."},
+ {c:"Process",l:"Advanced",q:"What is shift-left testing?",a:"Moving testing earlier in the lifecycle — reviewing requirements, writing tests alongside code, and catching defects sooner, when they're cheaper to fix."},
+ {c:"Test Design",l:"Advanced",q:"Explain risk-based testing in depth.",a:"Identify features, assess each by likelihood of failure and business impact, rank them, then allocate test depth and effort proportionally — testing high-risk areas thoroughly and low-risk areas lightly."},
+ {c:"Test Types",l:"Advanced",q:"How do you test microservices?",a:"Layer it: unit tests per service, contract tests between services, integration tests for service groups, and a thin set of end-to-end tests; mock external services and test resilience (timeouts, failures)."},
+ {c:"Automation",l:"Advanced",q:"How do you run tests efficiently in a CI/CD pipeline?",a:"Stage them (fast smoke first, full regression later), run in parallel, fail fast, isolate test data, use ephemeral environments/containers, and gate merges on critical suites."},
+ {c:"Process",l:"Advanced",q:"How do you handle a defect dev marks 'cannot reproduce'?",a:"Provide exact environment, build, data, steps, logs, and a video; confirm versions match; reproduce together; check for timing/data dependencies; and keep it open until jointly verified."},
+ {c:"Process",l:"Advanced",q:"How do you test a feature with no documentation?",a:"Explore the feature, talk to devs/PO/users to infer intent, model expected behavior, check similar features and industry norms, document your findings as living specs, and test against those."},
+ {c:"Process",l:"Advanced",q:"How do you prioritize bugs near a release deadline?",a:"By severity and business risk against time: block release for critical/high defects on core flows; defer cosmetic/low-impact issues with stakeholder sign-off and a tracked plan to fix later."},
+ {c:"Fundamentals",l:"Advanced",q:"How do you ensure quality beyond just finding bugs?",a:"Build a quality culture: prevent defects via early involvement, clear requirements and acceptance criteria, good processes, automation, metrics, and shared ownership of quality across the whole team."},
+ {c:"Performance",l:"Advanced",q:"How do you approach scalability testing?",a:"Gradually increase load while adding resources to verify the system scales (horizontally/vertically), find bottlenecks, measure how metrics degrade, and confirm it meets target capacity with headroom."},
+ {c:"Test Design",l:"Advanced",q:"How do you test an application end-to-end across systems?",a:"Map the full business workflow across UI, APIs, databases, and third parties; validate data integrity at each handoff; cover happy paths plus failure/recovery; and manage consistent test data across all systems."}
+];
+
+/* ---------- ranks ---------- */
+const RANKS = [
+  {min:0,  name:"QA Trainee",          short:"QA", color:"#7a8a9d"},
+  {min:10, name:"Junior Tester",       short:"JT", color:"#2f6df0"},
+  {min:25, name:"QA Analyst",          short:"QA", color:"#0e9f6e"},
+  {min:45, name:"QA Engineer",         short:"QE", color:"#0a8f8f"},
+  {min:65, name:"Senior QA Engineer",  short:"SQ", color:"#c2710c"},
+  {min:85, name:"QA Lead",             short:"QL", color:"#6d54d4"},
+  {min:100,name:"Test Architect",      short:"TA", color:"#d23f57"}
+];
+
+/* ---------- state ---------- */
+const KEY="qaquiz.v1";
+let state = load();
+function load(){
+  try{ const s=JSON.parse(Store.get(KEY)); if(s&&s.status) return s; }catch(e){}
+  return {status:{}, attempts:0, correct:0};
+}
+function save(){ Store.set(KEY, JSON.stringify(state)); }
+
+let filter={level:"All", cat:"All", review:false, shuffle:false};
+let order=[]; let pos=0; let revealed=false;
+let mode="quiz"; let quiz=null;
+
+/* ---------- build category list ---------- */
+(function(){
+  const cats=[...new Set(Q.map(x=>x.c))].sort();
+  const sel=document.getElementById("catSel");
+  cats.forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; sel.appendChild(o); });
+})();
+
+function masteredCount(){ return Q.reduce((n,_,i)=> n + (state.status[i]==="known"?1:0), 0); }
+function reviewCount(){ return Q.reduce((n,_,i)=> n + (state.status[i]==="review"?1:0), 0); }
+function seenCount(){ return Q.reduce((n,_,i)=> n + (state.status[i]?1:0), 0); }
+
+function currentRank(m){ let r=RANKS[0]; for(const x of RANKS) if(m>=x.min) r=x; return r; }
+function nextRank(m){ for(const x of RANKS) if(m<x.min) return x; return null; }
+
+function buildOrder(){
+  order=[];
+  Q.forEach((item,i)=>{
+    if(filter.level!=="All" && item.l!==filter.level) return;
+    if(filter.cat!=="All" && item.c!==filter.cat) return;
+    if(filter.review && state.status[i]!=="review") return;
+    order.push(i);
+  });
+  if(filter.shuffle){ for(let k=order.length-1;k>0;k--){ const j=Math.floor(Math.random()*(k+1)); [order[k],order[j]]=[order[j],order[k]]; } }
+  pos=0; revealed=false; quiz=null;
+}
+
+function mark(i,val){
+  const prev=state.status[i];
+  state.status[i]=val;
+  if(prev!=="known" && prev!=="review"){ state.attempts++; if(val==="known") state.correct++; }
+  else { if(val==="known" && prev!=="known") state.correct++; if(val==="review" && prev==="known") state.correct=Math.max(0,state.correct-1); }
+  save();
+}
+
+function renderStats(){
+  const m=masteredCount();
+  document.getElementById("sSeen").textContent=seenCount();
+  document.getElementById("sMaster").textContent=m;
+  document.getElementById("sReview").textContent=reviewCount();
+  const acc = state.attempts ? Math.round(state.correct/state.attempts*100)+"%" : "—";
+  document.getElementById("sAcc").textContent=acc;
+}
+
+function cardShell(card,i,item){
+  return `
+    <div class="cardtop">
+      <div class="tags">
+        <span class="t cat">${item.c}</span>
+        <span class="t lv-${item.l}">${item.l}</span>
+      </div>
+      <span class="qnum">${pos+1} / ${order.length}</span>
+    </div>
+    <div class="qtext">${item.q}</div>`;
+}
+
+function navRow(){
+  return `<div class="nav">
+      <button class="navbtn" id="prevBtn">‹ Prev</button>
+      <button class="navbtn" id="nextBtn">Skip ›</button>
+    </div>`;
+}
+function wireNav(){
+  document.getElementById("prevBtn").disabled=pos===0;
+  document.getElementById("prevBtn").onclick=()=>{ if(pos>0){pos--;revealed=false;quiz=null;render();} };
+  document.getElementById("nextBtn").onclick=()=>{ advance(); };
+}
+
+function renderCard(){
+  const card=document.getElementById("card");
+  if(order.length===0){
+    card.innerHTML=`<div class="done"><h2>No questions match these filters</h2><p>Try a different level or category, or turn off "Review only".</p></div>`;
+    return;
+  }
+  if(pos>=order.length){
+    const m=masteredCount();
+    card.innerHTML=`<div class="done"><h2>Set complete! 🎯</h2>
+      <p>You went through ${order.length} question${order.length>1?"s":""} in this filter.<br>
+      You've mastered <b>${m}/100</b> questions overall.</p>
+      <div class="actions"><button class="act reveal" onclick="restartSet()">Go again</button></div></div>`;
+    return;
+  }
+  const i=order[pos], item=Q[i];
+  if(mode==="quiz") renderQuiz(card,i,item); else renderFlash(card,i,item);
+}
+
+function renderFlash(card,i,item){
+  const st=state.status[i];
+  card.innerHTML=cardShell(card,i,item)+`
+    <div class="answer ${revealed?"":"hidden"}" id="ans">${item.a}</div>
+    ${st?`<div class="status-strip">Marked: ${st==="known"?"✓ mastered":"↻ to review"}</div>`:""}
+    <div class="actions" id="acts"></div>`+navRow();
+  const acts=document.getElementById("acts");
+  if(!revealed){
+    acts.innerHTML=`<button class="act reveal" id="revealBtn">Reveal answer</button>`;
+    document.getElementById("revealBtn").onclick=()=>{revealed=true;renderCard();};
+  } else {
+    acts.innerHTML=`<button class="act known" id="knownBtn">✓ I knew it</button>
+                    <button class="act review" id="reviewBtn">↻ Need review</button>`;
+    document.getElementById("knownBtn").onclick=()=>{mark(i,"known");advance();};
+    document.getElementById("reviewBtn").onclick=()=>{mark(i,"review");advance();};
+  }
+  wireNav();
+}
+
+function buildOptions(i){
+  const correct=Q[i].a;
+  let pool=Q.map((x,j)=>({a:x.a,c:x.c,j})).filter(x=>x.j!==i && x.a!==correct);
+  const same=pool.filter(x=>x.c===Q[i].c);
+  const rest=pool.filter(x=>x.c!==Q[i].c);
+  function pick(arr,n,taken){
+    const out=[]; const a=arr.slice();
+    while(out.length<n && a.length){ const k=Math.floor(Math.random()*a.length); const v=a.splice(k,1)[0];
+      if(!taken.has(v.a)){ out.push(v.a); taken.add(v.a); } }
+    return out;
+  }
+  const taken=new Set([correct]);
+  let distract=pick(same,3,taken);
+  if(distract.length<3) distract=distract.concat(pick(rest,3-distract.length,taken));
+  const opts=[{text:correct,correct:true}].concat(distract.map(t=>({text:t,correct:false})));
+  for(let k=opts.length-1;k>0;k--){ const j=Math.floor(Math.random()*(k+1)); [opts[k],opts[j]]=[opts[j],opts[k]]; }
+  return opts;
+}
+
+function renderQuiz(card,i,item){
+  if(!quiz || quiz.pos!==pos){ quiz={pos,i,options:buildOptions(i),chosen:null}; }
+  const answered = quiz.chosen!==null;
+  const letters=["A","B","C","D"];
+  let optsHtml="";
+  quiz.options.forEach((o,idx)=>{
+    let cls="opt";
+    if(answered){
+      if(o.correct) cls+=" correct";
+      else if(idx===quiz.chosen) cls+=" wrong";
+    }
+    optsHtml+=`<button class="${cls}" data-idx="${idx}" ${answered?"disabled":""}>
+      <span class="k">${letters[idx]}</span><span>${o.text}</span></button>`;
+  });
+  let fb="";
+  if(answered){
+    const ok=quiz.options[quiz.chosen].correct;
+    fb=`<div class="feedback ${ok?"ok":"no"}">${ok?"✓ Correct — marked as mastered":"✗ Not quite — marked for review"}</div>`;
+  }
+  card.innerHTML=cardShell(card,i,item)+`
+    <div class="opts" id="opts">${optsHtml}</div>
+    ${fb}
+    <div class="actions" id="acts"></div>`+navRow();
+
+  if(!answered){
+    document.getElementById("opts").addEventListener("click",e=>{
+      const b=e.target.closest(".opt"); if(!b) return;
+      answerQuiz(parseInt(b.dataset.idx,10));
+    });
+    document.getElementById("acts").innerHTML="";
+  } else {
+    const acts=document.getElementById("acts");
+    acts.innerHTML=`<button class="act reveal" id="nextQ">Next question ›</button>`;
+    document.getElementById("nextQ").onclick=()=>advance();
+  }
+  wireNav();
+}
+
+function answerQuiz(idx){
+  if(!quiz || quiz.chosen!==null) return;
+  quiz.chosen=idx;
+  const i=order[pos];
+  mark(i, quiz.options[idx].correct ? "known" : "review");
+  render();
+}
+
+function advance(){ pos++; revealed=false; quiz=null; render(); }
+function restartSet(){ buildOrder(); render(); }
+function render(){ renderStats(); renderCard(); }
+
+/* ---------- controls ---------- */
+document.getElementById("modes").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  mode=b.dataset.mode; revealed=false; quiz=null; render();
+});
+document.getElementById("levels").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  filter.level=b.dataset.lv; buildOrder(); render();
+});
+document.getElementById("catSel").addEventListener("change",e=>{ filter.cat=e.target.value; buildOrder(); render(); });
+document.getElementById("shuffleChk").addEventListener("change",e=>{ filter.shuffle=e.target.checked; buildOrder(); render(); });
+document.getElementById("reviewChk").addEventListener("change",e=>{ filter.review=e.target.checked; buildOrder(); render(); });
+(function(){
+  const btn=document.getElementById("resetBtn");
+  let armed=false, timer=null;
+  btn.addEventListener("click",()=>{
+    if(!armed){
+      armed=true; btn.textContent="Click again to confirm";
+      timer=setTimeout(()=>{ armed=false; btn.textContent="Reset progress"; },2500);
+      return;
+    }
+    clearTimeout(timer); armed=false; btn.textContent="Reset progress";
+    state={status:{},attempts:0,correct:0}; save();
+    buildOrder(); render();
+  });
+})();
+
+/* keyboard shortcuts */
+document.addEventListener("keydown",e=>{
+  if(["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if(!order.length || pos>=order.length) return;
+  if(mode==="quiz"){
+    if(!quiz) return;
+    if(quiz.chosen===null && ["1","2","3","4"].includes(e.key)){
+      const idx=parseInt(e.key,10)-1; if(idx<quiz.options.length) answerQuiz(idx);
+    } else if(quiz.chosen!==null && (e.key===" "||e.key==="Enter")){ e.preventDefault(); advance(); }
+  } else {
+    if((e.key===" "||e.key==="Enter") && !revealed){ e.preventDefault(); revealed=true; renderCard(); }
+    else if(revealed && e.key==="1"){ const i=order[pos]; mark(i,"known"); advance(); }
+    else if(revealed && e.key==="2"){ const i=order[pos]; mark(i,"review"); advance(); }
+  }
+});
+
+buildOrder(); render();
+</script>
+</body>
+</html>
