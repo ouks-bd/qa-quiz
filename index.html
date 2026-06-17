@@ -47,10 +47,20 @@
   .fill{height:100%;background:var(--pass);width:0%;transition:width .4s ease;}
 
   /* stats */
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
-  .stat .n{font-family:var(--display);font-weight:600;font-size:21px;}
-  .stat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;align-items:stretch;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center;display:flex;flex-direction:column;justify-content:center;}
+  .stat .n{font-family:var(--display);font-weight:700;font-size:24px;line-height:1;}
+  .stat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+  .stat .l .ic{font-family:var(--body);font-size:11px;font-weight:600;}
+  .stat.ok{background:var(--pass-soft);border-color:#bce6d5;}
+  .stat.ok .n{color:var(--pass-d);} .stat.ok .l{color:var(--pass-d);}
+  .stat.no{background:var(--crit-soft);border-color:#f3ced5;}
+  .stat.no .n{color:var(--crit);} .stat.no .l{color:#a8334a;}
+  .stat.streak{background:var(--warn-soft);border-color:#f0d9b3;}
+  .stat.streak .n{color:var(--warn);} .stat.streak .l{color:var(--warn);}
+  .stat .sub{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--warn);opacity:.8;margin-top:4px;}
+  .flash{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:var(--warn);color:#fff;font-family:var(--display);font-weight:600;font-size:14px;padding:11px 20px;border-radius:13px;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:60;}
+  .flash.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
   /* controls */
   .controls{margin-top:16px;display:flex;flex-direction:column;gap:10px;}
@@ -122,7 +132,7 @@
   .site-foot a{color:var(--pass-d);text-decoration:none;font-weight:600;}
   .site-foot a:hover{text-decoration:underline;}
   .site-foot .sep{color:var(--line2);}
-  @media (max-width:560px){.stats{grid-template-columns:repeat(2,1fr);} .qtext{font-size:19px;}}
+  @media (max-width:560px){.qtext{font-size:19px;}}
 </style>
 </head>
 <body>
@@ -135,10 +145,9 @@
   </header>
 
   <div class="stats">
-    <div class="stat"><div class="n" id="sSeen">0</div><div class="l">Seen</div></div>
-    <div class="stat"><div class="n" id="sMaster">0</div><div class="l">Mastered</div></div>
-    <div class="stat"><div class="n" id="sReview">0</div><div class="l">To review</div></div>
-    <div class="stat"><div class="n" id="sAcc">—</div><div class="l">Accuracy</div></div>
+    <div class="stat ok"><div class="n" id="sCorrect">0</div><div class="l"><span class="ic">✓</span> Correct</div></div>
+    <div class="stat no"><div class="n" id="sWrong">0</div><div class="l"><span class="ic">✗</span> Incorrect</div></div>
+    <div class="stat streak"><div class="n" id="sStreak">0</div><div class="l">Streak</div><div class="sub" id="sBest">best 0</div></div>
   </div>
 
   <div class="controls">
@@ -170,6 +179,8 @@
     <a href="https://www.linkedin.com/in/obyed-ullah-khan/" target="_blank" rel="noopener">LinkedIn</a>
   </footer>
 </div>
+
+<div id="flash" class="flash"></div>
 
 <script>
 /* ---------- safe storage (works on GitHub Pages, falls back in sandboxed preview) ---------- */
@@ -319,14 +330,14 @@ const RANKS = [
 const KEY="qaquiz.v1";
 let state = load();
 function load(){
-  try{ const s=JSON.parse(Store.get(KEY)); if(s&&s.status) return s; }catch(e){}
-  return {status:{}, attempts:0, correct:0};
+  try{ const s=JSON.parse(Store.get(KEY)); if(s&&s.status){ s.streak=s.streak||0; s.best=s.best||0; return s; } }catch(e){}
+  return {status:{}, attempts:0, correct:0, streak:0, best:0};
 }
 function save(){ Store.set(KEY, JSON.stringify(state)); }
 
 let filter={level:"All", cat:"All", review:false, shuffle:false};
 let order=[]; let pos=0; let revealed=false;
-let mode="quiz"; let quiz=null;
+let mode="quiz"; let quiz=null; let flashBest=false;
 
 /* ---------- build category list ---------- */
 (function(){
@@ -359,16 +370,27 @@ function mark(i,val){
   state.status[i]=val;
   if(prev!=="known" && prev!=="review"){ state.attempts++; if(val==="known") state.correct++; }
   else { if(val==="known" && prev!=="known") state.correct++; if(val==="review" && prev==="known") state.correct=Math.max(0,state.correct-1); }
+  const oldBest=state.best||0;
+  if(val==="known"){ state.streak=(state.streak||0)+1; if(state.streak>oldBest) state.best=state.streak; }
+  else { state.streak=0; }
+  flashBest = (val==="known" && state.streak>oldBest && state.streak>=2);
   save();
 }
 
 function renderStats(){
-  const m=masteredCount();
-  document.getElementById("sSeen").textContent=seenCount();
-  document.getElementById("sMaster").textContent=m;
-  document.getElementById("sReview").textContent=reviewCount();
-  const acc = state.attempts ? Math.round(state.correct/state.attempts*100)+"%" : "—";
-  document.getElementById("sAcc").textContent=acc;
+  document.getElementById("sCorrect").textContent=masteredCount();
+  document.getElementById("sWrong").textContent=reviewCount();
+  document.getElementById("sStreak").textContent=state.streak||0;
+  document.getElementById("sBest").textContent="best "+(state.best||0);
+  if(flashBest){ flashBest=false; showFlash("🎉 New best streak: "+state.best+"!"); }
+}
+
+let flashTimer=null;
+function showFlash(msg){
+  const el=document.getElementById("flash");
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(flashTimer);
+  flashTimer=setTimeout(()=>el.classList.remove("show"),1900);
 }
 
 function cardShell(card,i,item){
@@ -417,7 +439,7 @@ function renderFlash(card,i,item){
   const st=state.status[i];
   card.innerHTML=cardShell(card,i,item)+`
     <div class="answer ${revealed?"":"hidden"}" id="ans">${item.a}</div>
-    ${st?`<div class="status-strip">Marked: ${st==="known"?"✓ mastered":"↻ to review"}</div>`:""}
+    ${st?`<div class="status-strip">Marked: ${st==="known"?"✓ correct":"↻ incorrect"}</div>`:""}
     <div class="actions" id="acts"></div>`+navRow();
   const acts=document.getElementById("acts");
   if(!revealed){
@@ -468,7 +490,7 @@ function renderQuiz(card,i,item){
   let fb="";
   if(answered){
     const ok=quiz.options[quiz.chosen].correct;
-    fb=`<div class="feedback ${ok?"ok":"no"}">${ok?"✓ Correct — marked as mastered":"✗ Not quite — marked for review"}</div>`;
+    fb=`<div class="feedback ${ok?"ok":"no"}">${ok?"✓ Correct":"✗ Incorrect — added to review"}</div>`;
   }
   card.innerHTML=cardShell(card,i,item)+`
     <div class="opts" id="opts">${optsHtml}</div>
@@ -525,7 +547,7 @@ document.getElementById("reviewChk").addEventListener("change",e=>{ filter.revie
       return;
     }
     clearTimeout(timer); armed=false; btn.textContent="Reset progress";
-    state={status:{},attempts:0,correct:0}; save();
+    state={status:{},attempts:0,correct:0,streak:0,best:0}; save();
     buildOrder(); render();
   });
 })();
